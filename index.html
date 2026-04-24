@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>QLM GAMES</title>
+<script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Cinzel:wght@700;900&family=Space+Grotesk:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --gold: #c9933a; --gold-light: #f0be6a; --amber: #e07b20;
+  --dark: #0c0804; --dark2: #16100a; --dark3: #1f1610; --dark4: #261a0c;
+  --cream: #f2e8d5; --muted: #7a6545; --border: #2e1f0e;
+  --green: #4ade80; --red: #f87171;
+}
+html, body { height: 100%; overflow-x: hidden; }
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  background: var(--dark); color: var(--cream);
+  min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+}
+.screen { display: none; width: 100%; max-width: 480px; min-height: 100vh; flex-direction: column; padding: 0 0 40px; }
+.screen.active { display: flex; }
+
+/* HEADER */
+.hdr { padding: 26px 20px 16px; text-align: center; background: linear-gradient(180deg,rgba(201,147,58,0.1) 0%,transparent 100%); border-bottom: 1px solid var(--border); position: relative; flex-shrink: 0; }
+.hdr::before { content:'⚓'; position:absolute; top:14px; left:14px; font-size:1.2rem; opacity:0.1; }
+.hdr::after  { content:'⚓'; position:absolute; top:14px; right:14px; font-size:1.2rem; opacity:0.1; }
+.logo { font-family:'Pirata One',cursive; font-size:2.8rem; letter-spacing:4px; background:linear-gradient(180deg,var(--gold-light) 0%,var(--gold) 60%,var(--amber) 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 2px 12px rgba(201,147,58,0.4)); line-height:1; }
+.logo-sub { font-size:0.58rem; color:var(--muted); letter-spacing:4px; text-transform:uppercase; margin-top:4px; }
+.badge { display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:4px 14px; border:1px solid rgba(201,147,58,0.2); border-radius:999px; font-size:0.6rem; color:var(--gold); letter-spacing:1px; background:rgba(201,147,58,0.05); }
+.mini-hdr { padding:12px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; background:linear-gradient(180deg,rgba(201,147,58,0.07) 0%,transparent 100%); }
+.mini-logo { font-family:'Pirata One',cursive; font-size:1.6rem; color:var(--gold); letter-spacing:2px; }
+.code-pill { font-family:'Cinzel',serif; font-size:0.72rem; color:var(--gold-light); letter-spacing:3px; background:rgba(201,147,58,0.1); padding:5px 12px; border-radius:8px; border:1px solid rgba(201,147,58,0.2); }
+
+/* BODY */
+.body { padding:20px 18px; flex:1; display:flex; flex-direction:column; }
+
+/* INPUTS */
+.field-label { font-size:0.65rem; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; display:block; }
+.input-row { display:flex; gap:8px; margin-bottom:18px; }
+.text-input { flex:1; height:52px; padding:0 16px; border-radius:12px; background:var(--dark3); border:1.5px solid var(--border); color:var(--cream); font-family:'Space Grotesk',sans-serif; font-size:1rem; font-weight:700; outline:none; letter-spacing:2px; text-transform:uppercase; }
+.text-input::placeholder { color:var(--muted); font-size:0.85rem; letter-spacing:1px; text-transform:none; }
+.text-input:focus { border-color:rgba(201,147,58,0.5); }
+.name-input { width:100%; padding:14px 16px; border-radius:12px; margin-bottom:12px; background:var(--dark3); border:1.5px solid var(--border); color:var(--cream); font-family:'Space Grotesk',sans-serif; font-size:0.95rem; font-weight:600; outline:none; }
+.name-input:focus { border-color:rgba(201,147,58,0.5); }
+.answer-input { width:100%; padding:16px; border-radius:14px; margin-bottom:12px; background:var(--dark3); border:1.5px solid var(--border); color:var(--cream); font-family:'Space Grotesk',sans-serif; font-size:0.95rem; font-weight:600; outline:none; resize:none; min-height:90px; }
+.answer-input:focus { border-color:rgba(201,147,58,0.4); }
+
+/* BUTTONS */
+.btn-amber { height:52px; padding:0 20px; border-radius:12px; background:linear-gradient(135deg,var(--amber),var(--gold)); border:none; font-family:'Space Grotesk',sans-serif; font-weight:800; font-size:0.85rem; color:var(--dark); cursor:pointer; white-space:nowrap; flex-shrink:0; }
+.btn-amber:active { opacity:0.8; }
+.btn-full { width:100%; padding:16px; border-radius:14px; background:linear-gradient(135deg,var(--amber),var(--gold)); border:none; font-family:'Cinzel',serif; font-size:0.95rem; letter-spacing:2px; color:var(--dark); font-weight:700; cursor:pointer; margin-bottom:10px; }
+.btn-full:active { opacity:0.8; }
+.btn-ghost { width:100%; padding:15px; border-radius:14px; background:var(--dark3); border:1.5px solid rgba(201,147,58,0.3); font-family:'Cinzel',serif; font-size:0.9rem; color:var(--gold); letter-spacing:2px; cursor:pointer; margin-bottom:10px; }
+.btn-ghost:active { opacity:0.7; }
+
+/* DIVIDER */
+.divider { display:flex; align-items:center; gap:10px; margin:16px 0; }
+.divider-line { flex:1; height:1px; background:var(--border); }
+.divider-txt { font-size:0.65rem; color:var(--muted); letter-spacing:1px; }
+
+/* CHIPS */
+.chip-grid { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
+.pchip { padding:8px 16px; border-radius:999px; border:1.5px solid var(--border); background:var(--dark3); color:var(--muted); font-size:0.82rem; font-weight:700; cursor:pointer; transition:all 0.18s; display:flex; align-items:center; gap:6px; }
+.pchip.on { border-color:rgba(201,147,58,0.6); color:var(--gold); background:rgba(201,147,58,0.1); }
+.pchip.me { border-color:rgba(78,222,128,0.6); color:var(--green); background:rgba(78,222,128,0.08); }
+
+/* DOT */
+.dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; display:inline-block; }
+.dot.on { background:var(--green); box-shadow:0 0 5px rgba(74,222,128,0.5); }
+.dot.wait { background:var(--amber); }
+.dot.done { background:#60a5fa; }
+
+/* BOXES */
+.box { background:var(--dark3); border:1px solid var(--border); border-radius:16px; padding:16px; margin-bottom:12px; }
+.box-title { font-family:'Cinzel',serif; font-size:0.8rem; color:var(--gold); letter-spacing:2px; margin-bottom:10px; }
+.info-box { background:var(--dark3); border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin-bottom:12px; text-align:center; }
+.info-box .big { font-family:'Cinzel',serif; font-size:1.1rem; color:var(--gold); letter-spacing:2px; margin-bottom:4px; }
+.info-box .small { font-size:0.75rem; color:var(--muted); line-height:1.5; }
+
+/* SITUATION */
+.sit-card { background:var(--dark3); border:1px solid rgba(201,147,58,0.2); border-radius:18px; padding:20px; margin-bottom:14px; position:relative; overflow:hidden; }
+.sit-card::before { content:'☠'; position:absolute; bottom:-15px; right:0; font-size:6rem; opacity:0.04; pointer-events:none; }
+.sit-chip { font-size:0.6rem; color:var(--gold); letter-spacing:2px; text-transform:uppercase; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.sit-chip::before { content:''; width:20px; height:1px; background:var(--gold); opacity:0.4; }
+.sit-txt { font-size:0.98rem; font-weight:600; line-height:1.65; color:var(--cream); }
+
+/* VICTIM */
+.victim-row { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.avatar { width:40px; height:40px; border-radius:50%; flex-shrink:0; background:linear-gradient(135deg,var(--amber),var(--gold)); display:flex; align-items:center; justify-content:center; font-family:'Cinzel',serif; font-size:1rem; font-weight:700; color:var(--dark); box-shadow:0 0 0 2px rgba(201,147,58,0.3); }
+.victim-name { font-family:'Cinzel',serif; font-size:0.9rem; color:var(--gold); letter-spacing:1px; }
+.victim-role { font-size:0.6rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+
+/* TIMER */
+.timer-wrap { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+.timer-track { flex:1; height:5px; background:var(--border); border-radius:999px; overflow:hidden; }
+.timer-bar { height:100%; background:linear-gradient(90deg,var(--amber),var(--gold-light)); border-radius:999px; transition:width 1s linear, background 0.5s; }
+.timer-n { font-family:'Cinzel',serif; font-size:1rem; color:var(--gold); min-width:34px; text-align:right; }
+
+/* VOTE */
+.vote-legend { display:flex; gap:8px; margin-bottom:14px; }
+.leg { flex:1; padding:8px; border-radius:10px; text-align:center; font-size:0.68rem; font-weight:700; letter-spacing:1px; }
+.leg.best { background:rgba(201,147,58,0.1); color:var(--gold); border:1px solid rgba(201,147,58,0.2); }
+.leg.worst { background:rgba(248,113,113,0.08); color:var(--red); border:1px solid rgba(248,113,113,0.15); }
+.vote-card { background:var(--dark3); border:1.5px solid var(--border); border-radius:14px; padding:14px 15px; margin-bottom:9px; cursor:pointer; position:relative; transition:all 0.18s; }
+.vote-card.best { border-color:rgba(201,147,58,0.6); background:rgba(201,147,58,0.07); }
+.vote-card.worst { border-color:rgba(248,113,113,0.5); background:rgba(248,113,113,0.06); }
+.vote-card-txt { font-size:0.9rem; font-weight:600; line-height:1.5; color:var(--cream); }
+.vote-card-anon { font-size:0.6rem; color:var(--muted); margin-top:5px; letter-spacing:1px; }
+.vbadge { position:absolute; top:-9px; right:12px; font-size:0.62rem; font-weight:700; padding:2px 8px; border-radius:999px; }
+.vbadge.b { background:rgba(201,147,58,0.2); color:var(--gold); border:1px solid rgba(201,147,58,0.3); }
+.vbadge.w { background:rgba(248,113,113,0.15); color:var(--red); border:1px solid rgba(248,113,113,0.2); }
+
+/* RESULTS */
+.result-item { background:var(--dark3); border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin-bottom:8px; }
+.result-item.win { border-color:rgba(201,147,58,0.5); background:rgba(201,147,58,0.06); }
+.result-item.lose { border-color:rgba(248,113,113,0.3); background:rgba(248,113,113,0.04); }
+.r-name { font-family:'Cinzel',serif; font-size:0.82rem; color:var(--gold); letter-spacing:1px; margin-bottom:4px; }
+.r-txt { font-size:0.88rem; font-weight:600; line-height:1.5; color:var(--cream); margin-bottom:4px; }
+.r-pts { font-size:0.68rem; letter-spacing:1px; }
+
+/* SCORES */
+.score-row { display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--border); }
+.score-row:last-child { border-bottom:none; }
+.score-rank { width:26px; font-size:1.1rem; text-align:center; flex-shrink:0; }
+.score-name { flex:1; font-family:'Cinzel',serif; font-size:0.85rem; color:var(--cream); letter-spacing:1px; }
+.score-pts { font-family:'Cinzel',serif; font-size:1.4rem; background:linear-gradient(90deg,var(--gold),var(--gold-light)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; min-width:30px; text-align:right; }
+.score-pts.neg { background:linear-gradient(90deg,var(--red),#ff9999); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.gbadge { font-size:0.66rem; font-weight:700; padding:3px 9px; border-radius:999px; white-space:nowrap; }
+.gbadge.give { background:rgba(74,222,128,0.12); color:var(--green); border:1px solid rgba(74,222,128,0.2); }
+.gbadge.take { background:rgba(248,113,113,0.12); color:var(--red); border:1px solid rgba(248,113,113,0.2); }
+
+/* PROGRESS */
+.prog-wrap { width:100%; height:4px; background:var(--border); border-radius:999px; margin-bottom:16px; overflow:hidden; }
+.prog-bar { height:100%; background:linear-gradient(90deg,var(--amber),var(--gold-light)); border-radius:999px; transition:width 0.5s ease; }
+
+/* SECTION */
+.sec-title { font-family:'Cinzel',serif; font-size:0.85rem; color:var(--gold); letter-spacing:2px; margin-bottom:10px; }
+.sec-sub { font-size:0.75rem; color:var(--muted); margin-bottom:14px; line-height:1.5; }
+
+/* PULSE */
+.pulse { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--amber); margin-right:6px; animation:pls 1.5s infinite; }
+@keyframes pls { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+/* TOAST */
+.toast { position:fixed; bottom:70px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--gold); color:var(--dark); padding:10px 22px; border-radius:999px; font-weight:800; font-size:0.82rem; opacity:0; transition:all 0.3s; pointer-events:none; z-index:1000; white-space:nowrap; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* FOOTER */
+.footer { text-align:center; padding:14px; font-size:0.55rem; letter-spacing:3px; text-transform:uppercase; color:rgba(122,101,69,0.3); border-top:1px solid var(--border); margin-top:auto; flex-shrink:0; }
+.footer span { color:rgba(201,147,58,0.35); }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="s-home" class="screen active">
+  <div class="hdr">
+    <div class="logo">QLM GAMES</div>
+    <div class="logo-sub">Que la meilleure réponse gagne</div>
+    <div class="badge">⚓ La soirée du Capitaine &nbsp;·&nbsp; 🍺 8.6 Approved</div>
+  </div>
+  <div class="body">
+    <span class="field-label">Rejoindre une partie</span>
+    <div class="input-row">
+      <input class="text-input" id="join-code" placeholder="Code 4 lettres..." maxlength="4"/>
+      <button class="btn-amber" onclick="joinGame()">EMBARQUER</button>
+    </div>
+    <div class="divider"><div class="divider-line"></div><div class="divider-txt">OU</div><div class="divider-line"></div></div>
+    <button class="btn-ghost" onclick="showScreen('s-create')">🏴‍☠️ &nbsp;CRÉER UNE PARTIE</button>
+    <div style="margin-top:auto;padding-top:20px;font-size:0.56rem;color:rgba(122,101,69,0.3);text-align:center;letter-spacing:2px">🍺 NE PAS JOUER À JEUN · RESPONSABILITÉ DU CAPITAINE 🍺</div>
+  </div>
+  <div class="footer"><span>QLM PRODUCTION</span> · TOUS DROITS RÉSERVÉS</div>
+</div>
+
+<!-- CREATE -->
+<div id="s-create" class="screen">
+  <div class="hdr"><div class="logo">QLM GAMES</div><div class="logo-sub">Nouvelle partie</div></div>
+  <div class="body">
+    <div class="sec-title">⚓ Ton prénom</div>
+    <input class="name-input" id="host-name" placeholder="Ex: Flavien..." maxlength="14"/>
+    <div class="sec-title">🎯 Joueurs présents ce soir</div>
+    <div class="chip-grid" id="player-select"></div>
+    <button class="btn-full" onclick="createGame()">CRÉER LA PARTIE 🏴‍☠️</button>
+    <button class="btn-ghost" onclick="showScreen('s-home')">← Retour</button>
+  </div>
+  <div class="footer"><span>QLM PRODUCTION</span> · TOUS DROITS RÉSERVÉS</div>
+</div>
+
+<!-- LOBBY HOST -->
+<div id="s-lobby-host" class="screen">
+  <div class="mini-hdr"><div class="mini-logo">QLM</div><div class="code-pill" id="lh-code">····</div></div>
+  <div class="body">
+    <div class="info-box" style="margin-bottom:16px">
+      <div class="big" id="lh-code-big">····</div>
+      <div class="small">Partage ce code · tout le monde ouvre le même fichier et entre ce code</div>
+    </div>
+    <div class="box">
+      <div class="box-title">⚓ ÉQUIPAGE</div>
+      <div class="chip-grid" id="lh-players"></div>
+    </div>
+    <div class="info-box"><div class="small"><span class="pulse"></span>En attente des joueurs…</div></div>
+    <button class="btn-full" style="margin-top:auto" onclick="hostStartGame()">LEVER L'ANCRE ⚓</button>
+  </div>
+  <div class="footer"><span>QLM PRODUCTION</span> · TOUS DROITS RÉSERVÉS</div>
+</div>
+
+<!-- LOBBY PLAYER -->
+<div id="s-lobby-player" class="screen">
+  <div class="mini-hdr"><div class="mini-logo">QLM</div><div class="code-pill" id="lp-code">····</div></div>
+  <div class="body">
+    <div class="sec-title">Qui es-tu ?</div>
+    <div class="chip-grid" id="lp-who"></div>
+    <div class="box" style="margin-top:8px">
+      <div class="box-title">⚓ ÉQUIPAGE</div>
+      <div class="chip-grid" id="lp-players"></div>
+    </div>
+    <div class="info-box"><div class="small"><span class="pulse"></span>En attente du capitaine pour lever l'ancre…</div></div>
+  </div>
+  <div class="footer"><span>QLM PRODUCTION</span> · TOUS DROITS RÉSERVÉS</div>
+</div>
+
+<!-- SITUATION -->
+<div id="s-situation" class="screen">
+  <div class="mini-hdr"><div class="mini-logo">QLM</div><div class="code-pill" id="si-code">····</div></div>
+  <div class="body">
+    <div class="prog-wrap"><div class="prog-bar" id="prog"></div></div>
+    <div class="victim-row">
+      <div class="avatar" id="si-avatar">?</div>
+      <div><div class="victim-name" id="si-vname">—</div><div class="victim-role" id="si-round">MANCHE 1</div></div>
+    </div>
+    <div class="sit-card"><div class="sit-chip">Situation</div><div class="sit-txt" id="si-txt">…</div></div>
+    <!-- VICTIM -->
+    <div id="vw">
+      <div class="info-box"><div class="big">🎯 T'es la victime !</div><div class="small">Lis à voix haute. Les autres ont 80 secondes. Tu votes ensuite.</div></div>
+      <div class="timer-wrap"><div class="timer-track"><div class="timer-bar" id="tb-v" style="width:100%"></div></div><div class="timer-n" id="tn-v">80</div></div>
+    </div>
+    <!-- PLAYER -->
+    <div id="pw" style="display:none">
+      <div class="timer-wrap"><div class="timer-track"><div class="timer-bar" id="tb-p" style="width:100%"></div></div><div class="timer-n" id="tn-p">80</div></div>
+      <textarea class="answer-input" id="ans-input" placeholder="Ta réponse en secret…"></textarea>
+      <button class="btn-full" id="btn-send" onclick="sendAnswer()">ENVOYER ⚓</button>
+      <div id="ans-sent" style="display:none"><div class="info-box"><div class="big">✓ Envoyée !</div><div class="small"><span class="pulse"></span>En attente des autres…</div></div></div>
+    </div>
+    <div class="box" style="margin-top:6px"><div class="box-title" style="font-size:0.7rem;margin-bottom:8px">RÉPONSES REÇUES</div><div class="chip-grid" id="ans-status"></div></div>
+  </div>
+  <div class="footer"><span>QLM PRODUCTION</span> · TOUS DROITS RÉSERVÉS</div>
+</div>
+
+<!-- VOTE -->
+<div id="s-vote" class="screen">
+  <div class="mini-hdr"><div class="mini-logo">QLM</div><div class="code-pill" id="vo-code">····</div></div>
+  <div class="body">
+    <div class="sec-title" id="vo-title">VOTE 🗳️</div>
+    <div class="sec-sub">Sélectionne la meilleure ET la pire réponse</div>
+    <div class="vote-legend"><div class="leg best">👑 MEILLEURE +2pts</div><div class="leg worst">💀 PIRE −1pt</div></div>
+    <div id="vo-cards"></div>
+    <button class="btn-full" id="btn-vote-confirm" onclick="confirmVote()" style="display:none;margin-top:8px">CONFIRMER ⚓</button>
+  </div>
+  <div class="footer"><span>QLM PRODUCTION</span> · TOUS DROITS RÉSERVÉS</div>
+</div>
+
+<!-- WAITING VOTE -->
+<div id="s-wait-vote" class="screen">
+  <div class="mini-hdr"><div class="mini-logo">QLM</div><div class="code-pill" id="wv-code">····</div></div>
+  <div class="body" style="justify-content:center;align-items:center;text-align:center">
+    <div style="font-size:3rem;margin-bottom:16px">⚓</div>
+    <div class="sec-title" id="wv-title">VOTE EN COURS…</div>
+    <div class="sec-sub">La victime choisit la meilleure et la pire réponse</div>
+    <div><span class="pulse"></span><span style="font-size:0.75rem;color:var(--muted)">En attente du verdict…</span></div>
+  </div>
+  <div class="footer"><span>QLM PRODUCTION</span> · TOUS DROITS RÉSERVÉS</div>
+</div>
+
+<!-- ROUND RESULTS -->
+<div id="s-results" class="screen">
+  <div class="mini-hdr"><div class="mini-logo">QLM</div><div class="code-pill" id="rr-code">····</div></div>
+  <div class="body">
+    <div class="sec-title">⚓ RÉSULTATS DU TOUR</div>
+    <div id="rr-list"></div>
+    <div class="box" style="margin-bottom:14px"><div class="box-title">SCORES</div><div id="rr-scores"></div></div>
+    <button class="btn-full" id="btn-next" onclick="nextRound()" style="display:none">MANCHE SUIVANTE →</button>
+    <button class="btn-full" id="btn-final" onclick="showFinal()" style="display:none;background:linear-gradient(135deg,#4ade80,#22c55e);color:#000">RÉSULTATS FINAUX 🏆</button>
+  </div>
+  <div class="footer"><span>QLM PRODUCTION</span> · TOUS DROITS RÉSERVÉS</div>
+</div>
+
+<!-- FINAL -->
+<div id="s-final" class="screen">
+  <div class="hdr"><div class="logo">QLM GAMES</div><div class="logo-sub">Résultats finaux</div></div>
+  <div class="body">
+    <div style="text-align:center;font-size:2rem;margin-bottom:12px">🏆</div>
+    <div class="sec-title" style="text-align:center;margin-bottom:14px">TABLEAU FINAL</div>
+    <div id="fin-scores" style="margin-bottom:14px"></div>
+    <div class="sit-card" style="text-align:center;margin-bottom:14px">
+      <div class="sit-chip" style="justify-content:center">RÈGLE DU CAPITAINE</div>
+      <div class="sit-txt" id="fin-rules"></div>
+    </div>
+    <button class="btn-ghost" onclick="resetAll()">↺ NOUVELLE PARTIE</button>
+  </div>
+  <div class="footer"><span>QLM PRODUCTION</span> · TOUS DROITS RÉSERVÉS</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════
+//  SITUATIONS
+// ═══════════════════════════════
+const SITS = {
+  'Tim':[
+    "Tim est convoqué pour les auditions de Koh Lanta — le jury lui demande ce qu'il sait faire à manger, il répond quoi ?",
+    "Tim annonce à Myriam qu'il part 3 semaines en moto — elle réagit comment en sachant qu'elle gère tout chez lui depuis des années ?",
+    "Tim est en route pour son grand voyage en moto après l'avoir repoussé 6 fois — il tombe en panne au bout de 40km, il appelle qui en premier ?",
+    "Tim essaie d'arrêter de fumer depuis 3 mois — une meuf avec un paquet de clopes sort sur le balcon en soirée, la suite ?",
+    "La maison de Tim est visitée par un acheteur sérieux — Prudence débarque à l'improviste pendant la visite, la suite ?",
+    "Tim joue au poker toute la nuit, perd tout — il rentre chez lui et Myriam a préparé le petit dej, il lui dit quoi ?",
+    "Tim reçoit un message d'une meuf aux cheveux bleus qui veut le revoir — il répond quoi au groupe avant de répondre à elle ?",
+    "Tim candidate à Koh Lanta, il arrive sur l'île — premier soir il doit cuisiner pour la tribu, il prépare quoi ?"
+  ],
+  'Hugo':[
+    "Hugo organise son anniversaire cette année — il envoie quoi comme premier message dans le groupe 48h avant ?",
+    "Hugo arrive à Milan, ses potes atterrissent demain — il leur envoie quoi comme informations pratiques la veille ?",
+    "Hugo est aux urgences après un weekend de fête avec du fastfood — il poste quoi sur les réseaux depuis la salle d'attente ?",
+    "Hugo rentre d'Erasmus à Milan avec son pot de Nutella vide et 200€ — Solenne l'attend à la gare, il pense à quoi sur le quai ?",
+    "Hugo pitch son ancienne boîte d'achat-revente de sneakers à des investisseurs — il explique comment la boîte a fermé ?",
+    "Un gars de 2m regarde Hugo de travers en soirée — il gère la situation comment sachant qu'il a déjà vécu ce scénario ?",
+    "Hugo poste une photo depuis Milan pour prouver qu'il a une belle vie — il choisit quoi entre un transat, un yacht et le Duomo ?",
+    "Hugo doit expliquer à Solenne comment fonctionne son bonus Barclays — il commence son explication comment ?"
+  ],
+  'Eloi':[
+    "Eloi est en déplacement pro, une meuf avec un vernis blanc aux pieds s'assoit en face de lui — il envoie quoi à Lison dans la soirée ?",
+    "Eloi retourne en Colombie pour 6 mois, Lison est à Annecy — il envoie quoi comme message au groupe le premier samedi soir ?",
+    "Lison débarque à l'improviste à Paris — Eloi a 3 minutes, il nettoie quoi en premier ?",
+    "Le Real Madrid se fait éliminer et une meuf avec un vernis blanc lui sourit le même soir — il rentre à quelle heure et il dit quoi à Lison ?",
+    "Eloi doit expliquer à Lison la théorie selon laquelle à l'étranger ça compte pas vraiment — il commence son argumentation comment ?",
+    "Mbappé se blesse en finale, Eloi voit ça depuis une terrasse où une meuf porte des sandales — il réagit comment en premier ?",
+    "Eloi est invité à un match de l'OM par un ami — il accepte comment et il le dit comment au groupe ?",
+    "Lison envoie une photo de ses pieds avec un vernis blanc depuis Annecy — Eloi répond quoi ?"
+  ],
+  'François':[
+    "François finit l'Ironman des championnats du monde — il attend que quelqu'un lui demande pour en parler ou il envoie un message au groupe dans la minute ?",
+    "François s'est mangé un mur en soirée et saigne — il fait quoi pour être sûr que tout le monde le voit avant d'appeler les secours ?",
+    "François est au Club Mickey, un enfant de 8 ans le défie au foot — il perd comment ?",
+    "Le daron de François est au chômage, sa sœur a repris les études, François touchait le chômage en voyageant — réunion de famille, qui présente le meilleur bilan professionnel ?",
+    "François conduit pour rentrer d'une soirée — les passagers réagissent comment au 3ème freinage d'urgence ?",
+    "François organise une soirée diapo de son voyage en Amérique du Sud — il projette quoi pendant 2 heures ?",
+    "Une blonde toxique lui sourit au bar en Patagonie — il panique comment et il rentre bredouille comment ?",
+    "François est sobre depuis 3 jours en Amazonie — il commande quoi sur Uber Eats quand il rentre en France ?"
+  ],
+  'Louis':[
+    "Louis est en entretien pour un poste de stratège de marque, le recruteur lui demande des exemples de contenus produits pendant ses 6 mois en Amérique du Sud — il sort son téléphone et montre quoi ?",
+    "Louis est en date avec Victoire, elle lui demande ce qu'il fait en ce moment — il répond quoi ?",
+    "Le père de Louis, le père de François et le père de Ben se retrouvent au pôle emploi le même mardi matin — c'est qui qui a le meilleur dossier ?",
+    "Louis et François organisent une soirée diapo de leur voyage devant QLM — ils projettent quoi pendant 2 heures ?",
+    "Louis est mort bourré à Édimbourg, on l'embrouille — il part marcher, il se retrouve où 3h après ?",
+    "Louis a un date avec Victoire le soir de la finale de Ligue des Champions — il prévient qui en premier que c'est annulé ?",
+    "Louis doit animer un book club et présenter un livre — il choisit lequel et pourquoi ?",
+    "Louis candidate pour un poste en comm, le recruteur demande son compte Instagram comme exemple de travail — il répond quoi ?"
+  ],
+  'Ben':[
+    "Ben arrive à la messe le dimanche matin après avoir cassé le carême avec 2 timbales — le curé lui demande ce qu'il a à confesser cette semaine ?",
+    "Ben explique à un recruteur ce qui s'est passé avec Phinedo — il part d'où dans son explication ?",
+    "Ben croise Augustine en soirée, sa cousine arrive 10 minutes après — la soirée se termine comment ?",
+    "Ben et Flavien emménagent ensemble — la première conversation avec les voisins elle ressemble à quoi ?",
+    "Ben a un non-lieu pour Phinedo, Dieu l'a pardonné pour le carême — Augustine elle en est où dans le processus ?",
+    "Ben apprend que sa collègue a finalement quitté son mec — il en parle à qui en premier ?",
+    "Ben défend Lepaul pour l'équipe de France, le SCO Angers pour le top 4, et Augustine pour la dernière fois — il convainc qui en premier ?",
+    "Ben est à la messe, le curé parle de fidélité et de constance — Ben pense à quoi ?"
+  ],
+  'Flavien':[
+    "Flavien se pointe à un event de son asso à Nanterre — il réalise que les bizus sont nés en 2007, il repart ou il reste pour expliquer aux enfants comment ça marche une soirée ?",
+    "Flavien raconte sa dernière soirée dont il se souvient — il commence par 'c'était en...' et il finit la phrase comment ?",
+    "Flavien a activé le bodycount mais on le voit jamais avec une meuf — il explique la situation comment à Ben quand ils emménagent ensemble ?",
+    "Jo croise Flavien en soirée 6 mois après — elle a les yeux secs ou pas ?",
+    "Flavien convainc tout QLM de finir à Pigalle à 4h du matin — le bilan de la soirée ressemble à quoi le lendemain ?",
+    "Flavien est au km 30 du marathon, il a les jambes qui lâchent — il pense à quoi pour tenir ?",
+    "Flavien présente une pote à un mec du groupe et ça galosche — il gère son rôle de spectateur comment ?",
+    "Flavien explique à un client de l'étude à Colombes ce qu'il fait dans la vie en soirée — il commence comment ?"
+  ]
+};
+
+const ALL_PLAYERS = ['Tim','Hugo','Eloi','François','Louis','Ben','Flavien'];
+
+// ═══════════════════════════════
+//  STATE
+// ═══════════════════════════════
+let ably = null;
+let channel = null;
+let roomCode = '';
+let myName = '';
+let isHost = false;
+let G = null; // game state
+let timerInv = null;
+let voteBest = null;
+let voteWorst = null;
+let shuffledAnswers = [];
+
+// ═══════════════════════════════
+//  INIT UI
+// ═══════════════════════════════
+function initPlayerChips() {
+  const c = document.getElementById('player-select');
+  c.innerHTML = '';
+  ALL_PLAYERS.forEach(name => {
+    const d = document.createElement('div');
+    d.className = 'pchip';
+    d.dataset.name = name;
+    d.textContent = name;
+    d.onclick = () => {
+      const on = d.dataset.sel === '1';
+      d.dataset.sel = on ? '0' : '1';
+      d.className = 'pchip' + (on ? '' : ' on');
+    };
+    c.appendChild(d);
+  });
+}
+
+function getSelected() {
+  return [...document.querySelectorAll('#player-select .pchip')]
+    .filter(d => d.dataset.sel === '1').map(d => d.dataset.name);
+}
+
+// ═══════════════════════════════
+//  CODE GENERATION
+// ═══════════════════════════════
+function genCode() {
+  const ch = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  return Array.from({length:4}, () => ch[Math.floor(Math.random()*ch.length)]).join('');
+}
+
+// ═══════════════════════════════
+//  ABLY CONNECTION
+// ═══════════════════════════════
+const ABLY_KEY = '5JnUwA.-8h8Ig:9yz2gEdfCMw9crlTPfaeJ41cQwaXj0pWg6I8jTitewk';
+
+function connectAbly(code, cb) {
+  try {
+    ably = new Ably.Realtime({ key: ABLY_KEY, clientId: myName || 'guest_' + Date.now() });
+    ably.connection.on('connected', () => {
+      channel = ably.channels.get('qlm-' + code);
+      channel.subscribe(msg => handleMsg(msg.name, msg.data));
+      if (cb) cb();
+    });
+    ably.connection.on('failed', () => showToast('Connexion échouée 😬'));
+  } catch(e) {
+    showToast('Erreur connexion');
+    console.error(e);
+  }
+}
+
+function pub(type, data) {
+  if (!channel) return;
+  channel.publish(type, { ...data, from: myName });
+}
+
+// ═══════════════════════════════
+//  MESSAGE HANDLER
+// ═══════════════════════════════
+function handleMsg(type, data) {
+  if (type === 'sync') {
+    G = data.state;
+    render();
+    return;
+  }
+  if (type === 'req_sync' && isHost) {
+    pubSync();
+    return;
+  }
+  if (type === 'answer' && isHost) {
+    G.answers = G.answers || {};
+    G.answers[data.from] = data.text;
+    pubSync();
+    return;
+  }
+  if (type === 'vote_result' && isHost) {
+    const best = data.best;
+    const worst = data.worst;
+    if (best && G.scores[best] !== undefined) G.scores[best] += 2;
+    if (worst && G.scores[worst] !== undefined) G.scores[worst] -= 1;
+    G.lastVote = data;
+    G.phase = 'results';
+    pubSync();
+    return;
+  }
+  if (type === 'joined' && isHost) {
+    if (!G.connected.includes(data.name)) G.connected.push(data.name);
+    pubSync();
+    return;
+  }
+  if (type === 'start_round' && isHost) {
+    return;
+  }
+}
+
+function pubSync() {
+  pub('sync', { state: G });
+}
+
+// ═══════════════════════════════
+//  CREATE GAME
+// ═══════════════════════════════
+function createGame() {
+  const name = document.getElementById('host-name').value.trim();
+  if (!name) { showToast('Entre ton prénom !'); return; }
+  const players = getSelected();
+  if (players.length < 2) { showToast('Sélectionne au moins 2 joueurs !'); return; }
+
+  myName = name;
+  isHost = true;
+  roomCode = genCode();
+
+  const order = buildOrder(players);
+  G = {
+    players,
+    scores: Object.fromEntries(players.map(p => [p, 0])),
+    connected: [name],
+    order,
+    round: 0,
+    total: order.length,
+    usedSits: Object.fromEntries(players.map(p => [p, []])),
+    sit: null,
+    answers: {},
+    lastVote: null,
+    phase: 'lobby'
+  };
+
+  document.getElementById('lh-code').textContent = roomCode;
+  document.getElementById('lh-code-big').textContent = roomCode;
+  renderLobbyHost();
+  showScreen('s-lobby-host');
+
+  connectAbly(roomCode, () => { pubSync(); });
+}
+
+function buildOrder(players) {
+  let order = [...players, ...players];
+  for (let i = order.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order;
+}
+
+// ═══════════════════════════════
+//  JOIN GAME
+// ═══════════════════════════════
+function joinGame() {
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  if (code.length !== 4) { showToast('Code à 4 lettres !'); return; }
+  roomCode = code;
+  isHost = false;
+  myName = '';
+
+  document.getElementById('lp-code').textContent = code;
+  showScreen('s-lobby-player');
+
+  connectAbly(code, () => {
+    pub('req_sync', {});
+  });
+}
+
+// ═══════════════════════════════
+//  HOST START
+// ═══════════════════════════════
+function hostStartGame() {
+  if (!isHost || !G) return;
+  launchRound(0);
+}
+
+function launchRound(idx) {
+  const victim = G.order[idx];
+  const sits = SITS[victim] || [];
+  const used = G.usedSits[victim] || [];
+  const avail = sits.map((_,i)=>i).filter(i=>!used.includes(i));
+  const pick = avail.length > 0 ? avail[Math.floor(Math.random()*avail.length)] : Math.floor(Math.random()*sits.length);
+
+  G.usedSits[victim].push(pick);
+  G.round = idx;
+  G.sit = { victim, text: sits[pick] };
+  G.answers = {};
+  G.lastVote = null;
+  G.phase = 'situation';
+  pubSync();
+}
+
+function nextRound() {
+  if (!isHost) return;
+  launchRound(G.round + 1);
+}
+
+// ═══════════════════════════════
+//  RENDER
+// ═══════════════════════════════
+function render() {
+  if (!G) return;
+  setAllCodes();
+  const p = G.phase;
+  if (p === 'lobby') { renderLobby(); return; }
+  if (p === 'situation') { renderSituation(); return; }
+  if (p === 'voting') { renderVoting(); return; }
+  if (p === 'results') { renderResults(); return; }
+}
+
+function setAllCodes() {
+  ['lh-code','lp-code','si-code','vo-code','wv-code','rr-code'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = roomCode;
+  });
+}
+
+function renderLobby() {
+  if (isHost) {
+    renderLobbyHost();
+    showScreen('s-lobby-host');
+  } else {
+    renderLobbyPlayer();
+    showScreen('s-lobby-player');
+  }
+}
+
+function renderLobbyHost() {
+  if (!G) return;
+  const c = document.getElementById('lh-players');
+  c.innerHTML = G.players.map(p => {
+    const on = G.connected.includes(p);
+    return `<div class="pchip ${on?'on':''}"><span class="dot ${on?'on':'wait'}"></span>${p}</div>`;
+  }).join('');
+}
+
+function renderLobbyPlayer() {
+  // Build who-are-you chips if needed
+  if (G && G.players) {
+    const who = document.getElementById('lp-who');
+    if (who.children.length === 0) {
+      G.players.forEach(name => {
+        const d = document.createElement('div');
+        d.className = 'pchip';
+        d.textContent = name;
+        d.onclick = () => {
+          if (myName) return; // already chosen
+          myName = name;
+          // update ably clientId not possible after connect, but we store locally
+          document.querySelectorAll('#lp-who .pchip').forEach(c => c.className = 'pchip');
+          d.className = 'pchip me';
+          pub('joined', { name });
+          showToast('Bienvenue ' + name + ' ⚓');
+        };
+        who.appendChild(d);
+      });
+    }
+  }
+  // Players list
+  if (G && G.players) {
+    const c = document.getElementById('lp-players');
+    c.innerHTML = G.players.map(p => {
+      const on = G.connected && G.connected.includes(p);
+      return `<div class="pchip ${on?'on':''}"><span class="dot ${on?'on':'wait'}"></span>${p}</div>`;
+    }).join('');
+  }
+}
+
+function renderSituation() {
+  clearTimer();
+  const sit = G.sit;
+  document.getElementById('si-avatar').textContent = sit.victim.charAt(0);
+  document.getElementById('si-vname').textContent = sit.victim.toUpperCase();
+  document.getElementById('si-round').textContent = `MANCHE ${G.round+1} / ${G.total} · VICTIME DU TOUR`;
+  document.getElementById('si-txt').textContent = sit.text;
+  document.getElementById('prog').style.width = ((G.round+1)/G.total*100) + '%';
+
+  const isMe = myName === sit.victim;
+  document.getElementById('vw').style.display = isMe ? 'block' : 'none';
+  document.getElementById('pw').style.display = isMe ? 'none' : 'block';
+  document.getElementById('btn-send').style.display = 'block';
+  document.getElementById('ans-sent').style.display = 'none';
+  document.getElementById('ans-input').value = '';
+  document.getElementById('ans-input').disabled = false;
+
+  updateAnsStatus();
+  showScreen('s-situation');
+
+  const suffix = isMe ? 'v' : 'p';
+  startTimer(suffix, 80, () => {
+    if (isHost) {
+      G.phase = 'voting';
+      pubSync();
+    }
+  });
+}
+
+function updateAnsStatus() {
+  if (!G || !G.sit) return;
+  const players = G.players.filter(p => p !== G.sit.victim);
+  document.getElementById('ans-status').innerHTML = players.map(p => {
+    const done = G.answers && G.answers[p];
+    return `<div class="pchip ${done?'on':''}"><span class="dot ${done?'on':'wait'}"></span>${p}</div>`;
+  }).join('');
+}
+
+function renderVoting() {
+  clearTimer();
+  if (myName === G.sit?.victim) {
+    buildVoteCards();
+    document.getElementById('vo-title').textContent = `${myName} VOTE 🗳️`;
+    document.getElementById('vo-code').textContent = roomCode;
+    showScreen('s-vote');
+  } else {
+    document.getElementById('wv-title').textContent = `${G.sit?.victim} VOTE…`;
+    document.getElementById('wv-code').textContent = roomCode;
+    showScreen('s-wait-vote');
+  }
+}
+
+function buildVoteCards() {
+  const answers = G.answers || {};
+  const entries = Object.entries(answers);
+  // Shuffle
+  for (let i = entries.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [entries[i], entries[j]] = [entries[j], entries[i]];
+  }
+  shuffledAnswers = entries;
+  voteBest = null; voteWorst = null;
+
+  document.getElementById('vo-cards').innerHTML = entries.map(([,txt], i) =>
+    `<div class="vote-card" id="vc-${i}" onclick="pickVote(${i})">
+      <div class="vote-card-txt">${txt}</div>
+      <div class="vote-card-anon">RÉPONSE ANONYME #${i+1}</div>
+    </div>`
+  ).join('');
+  document.getElementById('btn-vote-confirm').style.display = 'none';
+}
+
+function pickVote(i) {
+  const card = document.getElementById('vc-'+i);
+  if (voteBest === i) {
+    voteBest = null; card.classList.remove('best'); card.querySelector('.vbadge')?.remove();
+  } else if (voteWorst === i) {
+    voteWorst = null; card.classList.remove('worst'); card.querySelector('.vbadge')?.remove();
+  } else if (voteBest === null) {
+    voteBest = i; card.classList.add('best');
+    const b = document.createElement('div'); b.className='vbadge b'; b.textContent='👑 MEILLEURE'; card.appendChild(b);
+  } else if (voteWorst === null && i !== voteBest) {
+    voteWorst = i; card.classList.add('worst');
+    const b = document.createElement('div'); b.className='vbadge w'; b.textContent='💀 PIRE'; card.appendChild(b);
+  }
+  document.getElementById('btn-vote-confirm').style.display = (voteBest !== null && voteWorst !== null) ? 'block' : 'none';
+}
+
+function confirmVote() {
+  const bestEntry = shuffledAnswers[voteBest];
+  const worstEntry = shuffledAnswers[voteWorst];
+  pub('vote_result', {
+    best: bestEntry[0], bestText: bestEntry[1],
+    worst: worstEntry[0], worstText: worstEntry[1]
+  });
+  document.getElementById('wv-code').textContent = roomCode;
+  document.getElementById('wv-title').textContent = 'Vote envoyé…';
+  showScreen('s-wait-vote');
+}
+
+function renderResults() {
+  clearTimer();
+  document.getElementById('rr-code').textContent = roomCode;
+  const v = G.lastVote || {};
+  const list = document.getElementById('rr-list');
+  list.innerHTML = '';
+
+  if (v.best) {
+    list.innerHTML += `<div class="result-item win"><div class="r-name">👑 ${v.best}</div><div class="r-txt">${v.bestText||''}</div><div class="r-pts" style="color:var(--gold)">+2 POINTS</div></div>`;
+  }
+  if (v.worst) {
+    list.innerHTML += `<div class="result-item lose"><div class="r-name">💀 ${v.worst}</div><div class="r-txt">${v.worstText||''}</div><div class="r-pts" style="color:var(--red)">−1 POINT</div></div>`;
+  }
+
+  const sorted = Object.entries(G.scores).sort((a,b)=>b[1]-a[1]);
+  const medals = ['🥇','🥈','🥉'];
+  document.getElementById('rr-scores').innerHTML = sorted.map(([n,s],i) =>
+    `<div class="score-row"><span class="score-rank">${medals[i]||(i+1)}</span><span class="score-name">${n}</span><span class="score-pts ${s<0?'neg':''}">${s>0?'+':''}${s}</span></div>`
+  ).join('');
+
+  const isLast = G.round >= G.total - 1;
+  document.getElementById('btn-next').style.display = (!isLast && isHost) ? 'block' : 'none';
+  document.getElementById('btn-final').style.display = isLast ? 'block' : 'none';
+  showScreen('s-results');
+}
+
+function showFinal() {
+  const sorted = Object.entries(G.scores).sort((a,b)=>b[1]-a[1]);
+  const medals = ['🥇','🥈','🥉'];
+  document.getElementById('fin-scores').innerHTML = sorted.map(([n,s],i) => {
+    const badge = s > 0 ? `<span class="gbadge give">🍺 Distribue ${s}</span>` : s < 0 ? `<span class="gbadge take">😬 Boit ${Math.abs(s)}</span>` : `<span class="gbadge" style="color:var(--muted)">😌 Tranquille</span>`;
+    return `<div class="score-row" style="background:var(--dark3);border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border)"><span class="score-rank">${medals[i]||(i+1)}</span><span class="score-name">${n}</span><span class="score-pts ${s<0?'neg':''}">${s>0?'+':''}${s}</span>${badge}</div>`;
+  }).join('');
+
+  const givers = sorted.filter(([,s])=>s>0).map(([n,s])=>`${n} distribue ${s} gorgée${s>1?'s':''}`);
+  const takers = sorted.filter(([,s])=>s<0).map(([n,s])=>`${n} boit ${Math.abs(s)} gorgée${Math.abs(s)>1?'s':''}`);
+  document.getElementById('fin-rules').innerHTML = [...givers,...takers].join('<br>') || 'Tout le monde est tranquille. Dieu vous a tous pardonnés.';
+  showScreen('s-final');
+}
+
+// ═══════════════════════════════
+//  ANSWER
+// ═══════════════════════════════
+function sendAnswer() {
+  const txt = document.getElementById('ans-input').value.trim();
+  if (!txt) { showToast('Écris quelque chose !'); return; }
+  pub('answer', { text: txt });
+  document.getElementById('btn-send').style.display = 'none';
+  document.getElementById('ans-sent').style.display = 'block';
+  document.getElementById('ans-input').disabled = true;
+  if (isHost) {
+    G.answers = G.answers || {};
+    G.answers[myName] = txt;
+    pubSync();
+  }
+}
+
+// ═══════════════════════════════
+//  TIMER
+// ═══════════════════════════════
+function startTimer(sfx, total, onEnd) {
+  clearTimer();
+  let secs = total;
+  const bar = document.getElementById('tb-'+sfx);
+  const num = document.getElementById('tn-'+sfx);
+  if (!bar || !num) return;
+  timerInv = setInterval(() => {
+    secs--;
+    const pct = Math.max(0, secs/total*100);
+    bar.style.width = pct+'%';
+    num.textContent = Math.max(0, secs);
+    if (secs <= 15) { bar.style.background='linear-gradient(90deg,var(--red),#ff9090)'; num.style.color='var(--red)'; }
+    else if (secs <= 30) { bar.style.background='linear-gradient(90deg,var(--amber),#ffdd80)'; }
+    if (secs <= 0) { clearTimer(); if (onEnd) onEnd(); }
+  }, 1000);
+}
+
+function clearTimer() { if (timerInv) { clearInterval(timerInv); timerInv = null; } }
+
+// ═══════════════════════════════
+//  NAV
+// ═══════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function resetAll() {
+  if (ably) { ably.close(); ably = null; }
+  channel = null; G = null; myName = ''; isHost = false; roomCode = '';
+  clearTimer();
+  showScreen('s-home');
+}
+
+// ═══════════════════════════════
+//  TOAST
+// ═══════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ═══════════════════════════════
+//  BOOT
+// ═══════════════════════════════
+initPlayerChips();
+</script>
+</body>
+</html>
