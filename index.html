@@ -199,10 +199,10 @@ body { font-family:'Space Grotesk',sans-serif; background:var(--dark); color:var
     <div class="sit-card"><div class="sit-chip">Situation</div><div class="sit-txt" id="si-txt">…</div></div>
     <div id="vw">
       <div class="info-box"><div class="big">🎯 T'es la victime !</div><div class="small">Lis à voix haute. Les autres ont 80 secondes pour répondre. Tu voteras ensuite.</div></div>
-      <div class="timer-wrap"><div class="timer-track"><div class="timer-bar" id="tb-v" style="width:100%"></div></div><div class="timer-n" id="tn-v">80</div></div>
+      <div class="timer-wrap"><div class="timer-track"><div class="timer-bar" id="tb-v" style="width:100%"></div></div><div class="timer-n" id="tn-v">40</div></div>
     </div>
     <div id="pw" style="display:none">
-      <div class="timer-wrap"><div class="timer-track"><div class="timer-bar" id="tb-p" style="width:100%"></div></div><div class="timer-n" id="tn-p">80</div></div>
+      <div class="timer-wrap"><div class="timer-track"><div class="timer-bar" id="tb-p" style="width:100%"></div></div><div class="timer-n" id="tn-p">40</div></div>
       <textarea class="answer-input" id="ans-input" placeholder="Ta réponse en secret…"></textarea>
       <button class="btn-full" id="btn-send" onclick="sendAnswer()">ENVOYER ⚓</button>
       <div id="ans-sent" style="display:none"><div class="info-box"><div class="big">✓ Envoyée !</div><div class="small"><span class="pulse"></span>En attente des autres…</div></div></div>
@@ -348,6 +348,7 @@ const ABLY_KEY = '5JnUwA.-8h8Ig:9yz2gEdfCMw9crlTPfaeJ41cQwaXj0pWg6I8jTitewk';
 //  STATE
 // ══════════════════════════════════════
 let ably=null, channel=null, roomCode='', myName='', isHost=false, G=null, timerInv=null;
+let hasSentAnswer = false;
 let voteChoice=null, shuffledAnswers=[];
 
 // ══════════════════════════════════════
@@ -498,6 +499,7 @@ function launchRound(idx) {
   G.answers = {};
   G.lastVote = null;
   G.phase = 'situation';
+  hasSentAnswer = false;
   pubSync();
 }
 
@@ -576,15 +578,23 @@ function renderSituation() {
   const isMe = myName === sit.victim;
   document.getElementById('vw').style.display = isMe ? 'block' : 'none';
   document.getElementById('pw').style.display = isMe ? 'none' : 'block';
-  document.getElementById('btn-send').style.display = 'block';
-  document.getElementById('ans-sent').style.display = 'none';
-  const ai = document.getElementById('ans-input');
-  ai.value = ''; ai.disabled = false;
+
+  // Restore or lock answer zone based on hasSentAnswer
+  if (hasSentAnswer) {
+    document.getElementById('btn-send').style.display = 'none';
+    document.getElementById('ans-sent').style.display = 'block';
+    document.getElementById('ans-input').disabled = true;
+  } else {
+    document.getElementById('btn-send').style.display = 'block';
+    document.getElementById('ans-sent').style.display = 'none';
+    const ai = document.getElementById('ans-input');
+    ai.value = ''; ai.disabled = false;
+  }
 
   updateAnsStatus();
   showScreen('s-situation');
 
-  startTimer(isMe ? 'v' : 'p', 80, () => {
+  startTimer(isMe ? 'v' : 'p', 40, () => {
     if (isHost) { G.phase = 'reveal'; pubSync(); }
   });
 }
@@ -744,7 +754,8 @@ function showFinal() {
 function sendAnswer() {
   const txt = document.getElementById('ans-input').value.trim();
   if (!txt) { showToast('Écris quelque chose !'); return; }
-  // Bloquer immédiatement tout renvoi
+  // Bloquer immédiatement et de façon permanente
+  hasSentAnswer = true;
   document.getElementById('btn-send').style.display = 'none';
   document.getElementById('ans-sent').style.display = 'block';
   document.getElementById('ans-input').disabled = true;
@@ -804,7 +815,7 @@ function showScreen(id) {
 
 function resetAll() {
   if(ably){ably.close();ably=null;}
-  channel=null; G=null; myName=''; isHost=false; roomCode='';
+  channel=null; G=null; myName=''; isHost=false; roomCode=''; hasSentAnswer=false;
   clearTimer();
   initPlayerChips();
   showScreen('s-home');
