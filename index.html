@@ -412,7 +412,7 @@ function handleMsg(type, data) {
   if (type === 'answer' && isHost) {
     G.answers = G.answers || {};
     G.answers[data.from] = data.text;
-    pubSync(); return;
+    checkAllAnswered(); return;
   }
   if (type === 'vote_result' && isHost) {
     if (data.best) G.scores[data.best] = (G.scores[data.best]||0) + 2;
@@ -744,13 +744,31 @@ function showFinal() {
 function sendAnswer() {
   const txt = document.getElementById('ans-input').value.trim();
   if (!txt) { showToast('Écris quelque chose !'); return; }
-  pub('answer', { text: txt });
+  // Bloquer immédiatement tout renvoi
   document.getElementById('btn-send').style.display = 'none';
   document.getElementById('ans-sent').style.display = 'block';
   document.getElementById('ans-input').disabled = true;
+
   if (isHost) {
     G.answers = G.answers || {};
     G.answers[myName] = txt;
+    checkAllAnswered();
+  } else {
+    pub('answer', { text: txt });
+  }
+}
+
+function checkAllAnswered() {
+  if (!isHost || !G) return;
+  const expected = G.players.filter(p => p !== G.sit.victim);
+  const answered = Object.keys(G.answers || {});
+  const allDone = expected.every(p => answered.includes(p));
+  if (allDone) {
+    clearTimer();
+    G.phase = 'reveal';
+    G.shuffledOrder = null;
+    pubSync();
+  } else {
     pubSync();
   }
 }
